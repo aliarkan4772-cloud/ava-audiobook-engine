@@ -377,8 +377,21 @@ fun OpenAudioBookifyApp(viewModel: MainViewModel) {
             }
         }
 
-        ContextCompat.startForegroundService(context, intent)
-        Toast.makeText(context, context.getString(R.string.processing_started), Toast.LENGTH_SHORT).show()
+        try {
+            ContextCompat.startForegroundService(context, intent)
+            Toast.makeText(
+                context,
+                context.getString(R.string.processing_started),
+                Toast.LENGTH_SHORT
+            ).show()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start AudiobookService", e)
+            Toast.makeText(
+                context,
+                "Start failed: ${e.javaClass.simpleName}: ${e.localizedMessage}",
+                Toast.LENGTH_LONG
+            ).show()
+        }
     }
 
     Scaffold(
