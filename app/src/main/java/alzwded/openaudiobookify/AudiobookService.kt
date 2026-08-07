@@ -231,10 +231,7 @@ class AudiobookService : Service(), TextToSpeech.OnInitListener {
             if (languageResult == TextToSpeech.LANG_MISSING_DATA ||
                 languageResult == TextToSpeech.LANG_NOT_SUPPORTED
             ) {
-                Log.e(TAG, "TTS language not supported: $requestedLocale")
-                updateNotification("TTS language not supported: ${requestedLocale.displayLanguage}")
-                shutdownService()
-                return
+                Log.w(TAG, "Android TTS language not supported: $requestedLocale; Edge TTS will be used")
             }
 
             settingsHelper.ttsVoice?.let { voiceName: String ->

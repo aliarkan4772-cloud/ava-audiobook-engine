@@ -55,6 +55,8 @@
 
 package alzwded.openaudiobookify
 
+import alzwded.openaudiobookify.engine.EdgeTtsEngine
+
 import android.content.Context
 import android.content.ContentValues
 import android.net.Uri
@@ -99,6 +101,11 @@ class AudiobookPipeline(
     private val textChunks: Iterator<TextChunk> = provider.extractText().batchByLength(getBatchSize()).iterator()
     private var chunkIndex = 0
     @Volatile private var isCancelled = false
+
+    private val edgeTtsEngine = EdgeTtsEngine(
+        serverUrl = "https://relations-proteins-seem-causes.trycloudflare.com",
+        voice = "fa-IR-DilaraNeural"
+    )
 
     // Keep track of our encoded intermediate m4a chunks
     private val encodedChunkFiles = mutableListOf<File>()
@@ -188,6 +195,9 @@ class AudiobookPipeline(
                 val wavFile = getWavFile(chunkIndex)
                 if (wavFile.exists()) wavFile.delete()
 
+                val edgeMp3File = getEdgeMp3File(chunkIndex)
+                if (edgeMp3File.exists()) edgeMp3File.delete()
+
                 val tempM4a = getTempM4aFile(chunkIndex)
                 if (tempM4a.exists()) {
                     encodedChunkFiles.add(tempM4a)
@@ -235,31 +245,42 @@ class AudiobookPipeline(
 
         chunkIndex++
         val chunk = textChunks.next()
-        onProgress(BookStatus.SPEAKING, ((chunk?.progress ?: 0.5f) * 90.0f).toInt())
+        onProgress(
+            BookStatus.SPEAKING,
+            ((chunk.progress ?: 0.5f) * 90.0f).toInt()
+        )
+
         val text = chunk.text
-        val wavFile = getWavFile(chunkIndex)
-        val utteranceId = "chunk_$chunkIndex"
+        val edgeFile = getEdgeMp3File(chunkIndex)
 
-        val params = Bundle().apply { putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId) }
+        if (edgeFile.exists()) edgeFile.delete()
 
-        synthesizeCurrentChunk = { ->
-            tts.synthesizeToFile(text, params, wavFile, utteranceId)
-        }
-        
-        try {
-            val result = synthesizeCurrentChunk()
-            if (result == TextToSpeech.ERROR) {
-                Log.e(TAG, "TTS Error: synthesizeToFile returned ERROR for chunk $chunkIndex")
-                isCancelled = true
-                cleanup()
-                onError(context.getString(R.string.error_tts_failed))
+        Log.i(TAG, "Requesting Edge TTS for chunk $chunkIndex")
+
+        edgeTtsEngine.synthesize(
+            text = text,
+            outputFile = edgeFile,
+            onSuccess = { generatedFile ->
+                if (isCancelled) return@synthesize
+
+                Handler(context.mainLooper).post {
+                    if (!isCancelled) {
+                        encodeWavToM4a(
+                            generatedFile,
+                            getTempM4aFile(chunkIndex)
+                        )
+                    }
+                }
+            },
+            onError = { message ->
+                if (!isCancelled) {
+                    Log.e(TAG, "Edge TTS error on chunk $chunkIndex: $message")
+                    isCancelled = true
+                    cleanup()
+                    this@AudiobookPipeline.onError("Edge TTS: $message")
+                }
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Exception during TTS synthesizeToFile", e)
-            isCancelled = true
-            cleanup()
-            onError(context.getString(R.string.error_tts_exception, e.localizedMessage ?: "Unknown error"))
-        }
+        )
     }
 
     private fun setupTtsListener() {
@@ -529,5 +550,6 @@ class AudiobookPipeline(
     }
 
     private fun getWavFile(index: Int) = File(context.cacheDir, "temp_audiobook_chunk_$index.wav")
+    private fun getEdgeMp3File(index: Int) = File(context.cacheDir, "temp_audiobook_chunk_$index.mp3")
     private fun getTempM4aFile(index: Int) = File(context.cacheDir, "temp_audiobook_chunk_$index.m4a")
 }
