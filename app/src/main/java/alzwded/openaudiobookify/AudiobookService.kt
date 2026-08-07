@@ -41,6 +41,7 @@ import android.provider.OpenableColumns
 import android.speech.tts.TextToSpeech
 import android.speech.tts.Voice
 import android.util.Log
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.*
@@ -308,6 +309,11 @@ class AudiobookService : Service(), TextToSpeech.OnInitListener {
                             serviceScope.launch(Dispatchers.Main) {
                                 failedBooks.add(cleanBookName)
                                 updateNotification(getString(R.string.failed_with_error, errorMsg))
+                                Toast.makeText(
+                                    this@AudiobookService,
+                                    "Ava error: $errorMsg",
+                                    Toast.LENGTH_LONG
+                                ).show()
                                 pipeline = null
                                 updateBookState(nextBook.uri, BookStatus.FINISHED)
                                 processNextBook() // Move on to the next book or finish
