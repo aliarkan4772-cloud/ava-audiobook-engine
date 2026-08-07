@@ -220,10 +220,20 @@ class AudiobookService : Service(), TextToSpeech.OnInitListener {
         Log.i(TAG, "onInit $status")
         isInitializingTts = false
         if (status == TextToSpeech.SUCCESS) {
-            settingsHelper.ttsLanguage?.let {
-                tts?.language = Locale.forLanguageTag(it)
-            } ?: run {
-                tts?.language = Locale.getDefault()
+            val requestedLocale = settingsHelper.ttsLanguage?.let {
+                Locale.forLanguageTag(it)
+            } ?: Locale.getDefault()
+
+            val languageResult = tts?.setLanguage(requestedLocale)
+                ?: TextToSpeech.LANG_NOT_SUPPORTED
+
+            if (languageResult == TextToSpeech.LANG_MISSING_DATA ||
+                languageResult == TextToSpeech.LANG_NOT_SUPPORTED
+            ) {
+                Log.e(TAG, "TTS language not supported: $requestedLocale")
+                updateNotification("TTS language not supported: ${requestedLocale.displayLanguage}")
+                shutdownService()
+                return
             }
 
             settingsHelper.ttsVoice?.let { voiceName: String ->
