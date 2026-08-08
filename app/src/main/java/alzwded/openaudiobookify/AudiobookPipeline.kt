@@ -103,7 +103,7 @@ class AudiobookPipeline(
     @Volatile private var isCancelled = false
 
     private val edgeTtsEngine = EdgeTtsEngine(
-        serverUrl = "https://relations-proteins-seem-causes.trycloudflare.com",
+        serverUrl = "https://rolled-discharge-ntsc-knit.trycloudflare.com",
         voice = "fa-IR-DilaraNeural"
     )
 
