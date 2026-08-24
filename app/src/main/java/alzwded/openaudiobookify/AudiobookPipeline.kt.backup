@@ -256,7 +256,7 @@ class AudiobookPipeline(
 
         Log.i(TAG, "Requesting Edge TTS for chunk $chunkIndex")
 
-        ttsEngine.synthesize(
+        edgeTtsEngine.synthesize(
             text = text,
             outputFile = edgeFile,
             onSuccess = { generatedFile ->
