@@ -52,3 +52,12 @@ Thumbs.db
 
 app/release
 dist
+audiobook_farsi_tts/
+piper-tts/
+recording/
+*.mp3
+*.wav
+*.m4a
+*.onnx
+*.so
+*.so.*
