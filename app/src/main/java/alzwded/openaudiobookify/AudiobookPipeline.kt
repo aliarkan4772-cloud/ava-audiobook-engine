@@ -55,7 +55,6 @@
 
 package alzwded.openaudiobookify
 
-kotlin
    import alzwded.openaudiobookify.engine.AndroidTtsEngine
 
 import android.content.Context
@@ -103,8 +102,7 @@ class AudiobookPipeline(
     private var chunkIndex = 0
     @Volatile private var isCancelled = false
 
-     private val ttsEngine = AndroidTtsEngine(tts)"
-    )
+    private val ttsEngine = AndroidTtsEngine(tts)
 
     // Keep track of our encoded intermediate m4a chunks
     private val encodedChunkFiles = mutableListOf<File>()
@@ -259,6 +257,7 @@ class AudiobookPipeline(
         ttsEngine.synthesize(
             text = text,
             outputFile = edgeFile,
+            utteranceId = "chunk_$chunkIndex",
             onSuccess = { generatedFile ->
                 if (isCancelled) return@synthesize
 
